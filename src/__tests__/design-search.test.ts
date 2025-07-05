@@ -41,26 +41,40 @@ vi.mock('@napi-rs/canvas', () => ({
     })
 }));
 
+vi.mock('../utils/image-registry.js', () => {
+    let id = 1;
+    const registry = {
+        registerImage: vi.fn(async () => id++),
+        registerImageSync: vi.fn(() => id++),
+        getCachedGrid: vi.fn(() => null),
+        cacheGrid: vi.fn(),
+        getImage: vi.fn().mockReturnValue({ path: '/tmp/mock.png' })
+    };
+    return {
+        getImageRegistry: () => registry
+    };
+});
+
 // Removed design_search integration tests that try to browse real websites and timeout
 
 describe('createNumberedGrid', () => {
     it('should create a grid from image sources', async () => {
         const imagesSources = [
-            { url: 'http://example.com/image1.png', title: 'Image 1' },
-            { url: 'http://example.com/image2.png', title: 'Image 2' },
-            { dataUrl: 'data:image/png;base64,mockData', title: 'Image 3' }
+            { url: 'data:image/png;base64,image1', title: 'Image 1' },
+            { url: 'data:image/png;base64,image2', title: 'Image 2' },
+            { url: 'data:image/png;base64,image3', title: 'Image 3' }
         ];
 
         const result = await createNumberedGrid(imagesSources, 'test-grid');
         
         expect(result).toBeDefined();
         expect(typeof result).toBe('string');
-        expect(result.startsWith('data:image/png;base64,')).toBe(true);
+        expect(result.endsWith('.png')).toBe(true);
     });
 
     it('should handle different aspect ratios', async () => {
         const imagesSources = [
-            { url: 'http://example.com/image1.png' }
+            { url: 'data:image/png;base64,image1' }
         ];
 
         const landscapeResult = await createNumberedGrid(imagesSources, 'landscape-test', 'landscape');

@@ -59,15 +59,43 @@ vi.mock('../utils/grid-judge.js', () => ({
     judgeImageSet: vi.fn().mockResolvedValue(['mock-image-1.png'])
 }));
 
+vi.mock('@napi-rs/canvas', () => ({
+    createCanvas: vi.fn().mockReturnValue({
+        getContext: vi.fn().mockReturnValue({
+            drawImage: vi.fn()
+        }),
+        toDataURL: vi.fn().mockReturnValue('data:image/png;base64,mock')
+    }),
+    loadImage: vi.fn().mockResolvedValue({ width: 100, height: 100 })
+}));
+
+vi.mock('sharp', () => {
+    const sharpMock = vi.fn(() => ({
+        metadata: vi.fn().mockResolvedValue({ width: 100 }),
+        resize: vi.fn().mockReturnThis(),
+        toFormat: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(Buffer.from('mock'))
+    }));
+    return { __esModule: true, default: sharpMock };
+});
+
 vi.mock('fs', () => ({
     default: {
         existsSync: vi.fn().mockReturnValue(true),
         mkdirSync: vi.fn(),
-        writeFileSync: vi.fn()
+        writeFileSync: vi.fn(),
+        statSync: vi.fn().mockReturnValue({
+            isDirectory: () => false,
+            size: 1
+        })
     },
     existsSync: vi.fn().mockReturnValue(true),
     mkdirSync: vi.fn(),
-    writeFileSync: vi.fn()
+    writeFileSync: vi.fn(),
+    statSync: vi.fn().mockReturnValue({
+        isDirectory: () => false,
+        size: 1
+    })
 }));
 
 describe('design_image', () => {
