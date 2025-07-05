@@ -3,9 +3,11 @@
 
 # Node modules
 node_modules/
+demo/node_modules/
 
 # Build output
 dist/
+demo/dist/
 
 # Environment files
 .env
@@ -32,3 +34,19 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# Debug and test scripts
+debug-*.ts
+test-*.ts
+test-*.js
+
+# Temporary documentation
+FIXES_*.md
+IMPROVED_*.md
+OUTPUT_*.md
+SCREENSHOT_*.md
+UNIQUE_*.md
+
+# Screenshots and debug images
+*-debug.png
+*-content.png
