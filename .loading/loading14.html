@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neon Cross Rings</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+</style>
+<script src="https://rawcdn.githack.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
+</head>
+<body>
+
+<canvas id="shader" width="800" height="600"></canvas>
+
+<script id="frag" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2  u_resolution;
+uniform float u_time;
+
+vec3 palette(float t){
+  vec3 a=vec3(0.5);
+  vec3 b=vec3(0.5);
+  vec3 c=vec3(1.0);
+  vec3 d=vec3(0.263,0.416,0.557);
+  return a + b*cos(6.28318*(c*t+d));
+}
+
+void main(){
+  vec2 uv  = (gl_FragCoord.xy*2.0 - u_resolution.xy) / u_resolution.y;
+  vec2 uv0 = uv;
+  vec3 finalColor = vec3(0.0);
+  
+  for (float i = 0.0; i < 4.0; i++) {
+    vec3 col = palette(length(uv0) + i*0.4 + u_time*0.4);
+    
+    float r = length(uv);
+    
+    // Simple concentric circles
+    float rings = abs(sin(r * 8.0 - u_time * 2.0));
+    float d = rings - 0.5;
+    
+    // Clean cross pattern
+    float cross = min(abs(uv.x), abs(uv.y));
+    float crossLines = smoothstep(0.02, 0.01, cross);
+    
+    // Combine rings and cross
+    d = min(abs(d), cross - 0.01);
+    
+    // Add simple 45-degree lines
+    float diag = min(abs(uv.x - uv.y), abs(uv.x + uv.y));
+    d = min(d, diag - 0.01);
+    
+    d *= exp(-length(uv0));
+    d = sin(d * 8.0 + u_time) / 8.0;
+    d = abs(d);
+    d = pow(0.01 / d, 1.2);
+    
+    finalColor += col * d;
+    
+    uv *= 1.5;
+  }
+
+  gl_FragColor = vec4(finalColor, 1.0);
+}
+</script>
+
+<script>
+  window.addEventListener('load', function() {
+    const canvas  = document.getElementById('shader');
+    const sandbox = new GlslCanvas(canvas);
+    sandbox.load(document.getElementById('frag').textContent);
+  });
+</script>
+
+</body>
+</html>

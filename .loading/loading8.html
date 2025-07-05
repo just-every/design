@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neon Star Pattern</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+</style>
+<script src="https://rawcdn.githack.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
+</head>
+<body>
+
+<canvas id="shader" width="800" height="600"></canvas>
+
+<script id="frag" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2  u_resolution;
+uniform float u_time;
+
+vec3 palette(float t){
+  vec3 a=vec3(0.5);
+  vec3 b=vec3(0.5);
+  vec3 c=vec3(1.0);
+  vec3 d=vec3(0.263,0.416,0.557);
+  return a + b*cos(6.28318*(c*t+d));
+}
+
+void main(){
+  vec2 uv  = (gl_FragCoord.xy*2.0 - u_resolution.xy) / u_resolution.y;
+  vec2 uv0 = uv;
+  vec3 finalColor = vec3(0.0);
+  
+  for (float i = 0.0; i < 4.0; i++) {
+    vec3 col = palette(length(uv0) + i*0.4 + u_time*0.4);
+    
+    // Create polar coordinates
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
+    
+    // Create star/flower pattern with perfect symmetry
+    float petals = 6.0 + i * 2.0;
+    float d = r - 0.3 * (1.0 + 0.5 * sin(petals * a + u_time));
+    
+    // Add radial lines
+    float lines = abs(sin(a * petals * 0.5 + u_time * 0.5));
+    d = min(d, lines * r * 0.1);
+    
+    // Apply radial fade from center
+    d *= exp(-length(uv0) * 0.5);
+    d = sin(d * 8.0 + u_time) / 8.0;
+    d = abs(d);
+    d = pow(0.01 / d, 1.2);
+    
+    finalColor += col * d;
+    
+    // Scale for next iteration
+    uv *= 1.8;
+  }
+
+  gl_FragColor = vec4(finalColor, 1.0);
+}
+</script>
+
+<script>
+  window.addEventListener('load', function() {
+    const canvas  = document.getElementById('shader');
+    const sandbox = new GlslCanvas(canvas);
+    sandbox.load(document.getElementById('frag').textContent);
+  });
+</script>
+
+</body>
+</html>

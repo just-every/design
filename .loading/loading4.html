@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neon Sierpinski Chaos</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+</style>
+<script src="https://rawcdn.githack.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
+</head>
+<body>
+
+<canvas id="shader" width="800" height="600"></canvas>
+
+<script id="frag" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2  u_resolution;
+uniform float u_time;
+
+float sierpinski(vec2 p) {
+  float scale = 1.0;
+  float d = 1000.0;
+  
+  for(int i = 0; i < 8; i++) {
+    p = abs(p);
+    p = p * 2.0 - 1.0;
+    
+    if(p.x + p.y < 0.0) {
+      p.xy = -p.yx;
+    }
+    
+    p.x -= 0.5;
+    p.y -= 0.5;
+    
+    scale *= 2.0;
+    
+    float tri = max(abs(p.x) * 0.866 + p.y * 0.5, -p.y);
+    d = min(d, tri / scale);
+  }
+  
+  return d;
+}
+
+vec3 electricColor(float d, float t) {
+  vec3 col = vec3(0.0);
+  
+  float pulse = sin(d * 30.0 - t * 4.0) * 0.5 + 0.5;
+  
+  col += vec3(0.0, 0.5, 1.0) * exp(-d * 5.0) * 2.0;
+  col += vec3(1.0, 0.0, 0.5) * exp(-d * 10.0) * pulse;
+  col += vec3(0.5, 0.0, 1.0) * exp(-d * 20.0);
+  
+  float lightning = pow(max(0.0, 1.0 - abs(d)), 20.0);
+  col += vec3(1.0, 0.8, 1.0) * lightning;
+  
+  return col;
+}
+
+void main(){
+  vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution.xy) / u_resolution.y;
+  
+  uv *= 2.0 + sin(u_time * 0.1) * 0.5;
+  uv += vec2(sin(u_time * 0.2), cos(u_time * 0.15)) * 0.2;
+  
+  float rot = u_time * 0.1;
+  mat2 m = mat2(cos(rot), -sin(rot), sin(rot), cos(rot));
+  uv = m * uv;
+  
+  float d = sierpinski(uv);
+  
+  vec3 color = electricColor(d, u_time);
+  
+  gl_FragColor = vec4(color, 1.0);
+}
+</script>
+
+<script>
+  window.addEventListener('load', function() {
+    const canvas  = document.getElementById('shader');
+    const sandbox = new GlslCanvas(canvas);
+    sandbox.load(document.getElementById('frag').textContent);
+  });
+</script>
+
+</body>
+</html>

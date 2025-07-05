@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neon Variation 2</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+</style>
+<script src="https://rawcdn.githack.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
+</head>
+<body>
+
+<canvas id="shader" width="800" height="600"></canvas>
+
+<script id="frag" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2  u_resolution;
+uniform float u_time;
+
+// Fixed parameters based on the amazing variation
+uniform float u_radial_weight;
+uniform float u_angular_freq;
+uniform float u_ring_freq;
+uniform float u_cross_weight;
+uniform float u_square_weight;
+uniform float u_diagonal_weight;
+uniform float u_center_radius;
+uniform float u_thickness;
+uniform float u_wave_amplitude;
+uniform float u_iterations;
+uniform float u_scale_factor;
+uniform float u_rotation_per_layer;
+uniform float u_glow_intensity;
+uniform float u_pulse_freq;
+uniform float u_time_factor;
+uniform float u_use_tiling;
+
+vec3 palette(float t){
+  vec3 a=vec3(0.5);
+  vec3 b=vec3(0.5);
+  vec3 c=vec3(1.0);
+  vec3 d=vec3(0.263,0.416,0.557);
+  return a + b*cos(6.28318*(c*t+d));
+}
+
+float sdBox(vec2 p, vec2 b) {
+  vec2 d = abs(p) - b;
+  return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+
+void main(){
+  vec2 uv  = (gl_FragCoord.xy*2.0 - u_resolution.xy) / u_resolution.y;
+  vec2 uv0 = uv;
+  vec3 finalColor = vec3(0.0);
+
+  for (float i = 0.0; i < 6.0; i++) {
+    if (i >= u_iterations) break;
+    
+    vec3 col = palette(length(uv0) + i*0.4 + u_time*u_time_factor*0.4);
+    
+    // Apply rotation for this layer
+    float angle = i * u_rotation_per_layer;
+    mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
+    uv = rot * uv;
+    
+    // Transform UV with scaling
+    if (u_use_tiling > 0.5) {
+      uv = fract(uv * u_scale_factor) - 0.5;
+    } else {
+      // Smooth scaling with animated offset (no tiling)
+      vec2 offset = vec2(sin(u_time * u_time_factor * 0.3 + i), 
+                        cos(u_time * u_time_factor * 0.3 + i)) * 0.1;
+      uv = uv * u_scale_factor + offset;
+    }
+    
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
+    
+    // Base circular distance
+    float d = r;
+    
+    // Add angular variation (creates rays/stars when high)
+    if (u_angular_freq > 0.1) {
+      float angular = abs(sin(a * u_angular_freq + u_time*u_time_factor)) * r;
+      d = mix(d, angular, u_radial_weight);
+    }
+    
+    // Add rings
+    if (u_ring_freq > 0.1) {
+      float rings = abs(sin(r * u_ring_freq - u_time*u_time_factor * 2.0)) - 0.5;
+      d = mix(d, abs(rings), 1.0 - u_radial_weight);
+    }
+    
+    // Mix in square shapes
+    if (u_square_weight > 0.1) {
+      float box = sdBox(uv, vec2(0.3));
+      d = mix(d, box, u_square_weight);
+    }
+    
+    // Add cross pattern
+    if (u_cross_weight > 0.1) {
+      float cross = min(abs(uv.x), abs(uv.y));
+      d = mix(d, cross, u_cross_weight);
+    }
+    
+    // Add diagonal lines
+    if (u_diagonal_weight > 0.1) {
+      float diag = min(abs(uv.x - uv.y), abs(uv.x + uv.y));
+      d = mix(d, diag, u_diagonal_weight);
+    }
+    
+    // Add center circle/hole
+    if (u_center_radius > 0.01) {
+      float center = abs(r - u_center_radius);
+      d = min(d, center);
+    }
+    
+    // Apply wave distortion
+    if (u_wave_amplitude > 0.01) {
+      d += sin(a * 8.0 + u_time*u_time_factor) * u_wave_amplitude * r;
+    }
+    
+    // Convert to line thickness
+    d = abs(d) - u_thickness;
+    
+    // Apply standard radial expansion and glow
+    d *= exp(-length(uv0));
+    d = sin(d * u_pulse_freq + u_time*u_time_factor) / u_pulse_freq;
+    d = abs(d);
+    d = pow(0.01 / d, u_glow_intensity);
+
+    finalColor += col * d;
+  }
+
+  gl_FragColor = vec4(finalColor, 1.0);
+}
+</script>
+
+<script>
+  window.addEventListener('load', function() {
+    const canvas  = document.getElementById('shader');
+    const sandbox = new GlslCanvas(canvas);
+    
+    // Variation 2: Cross-focused with ring accents
+    const params = {
+      u_radial_weight: 0.08 + Math.random() * 0.06,  // 0.08-0.14
+      u_angular_freq: 0.0,  // No angular patterns
+      u_ring_freq: 7.0 + Math.random() * 3.0,  // 7-10
+      u_cross_weight: 0.25 + Math.random() * 0.15,  // 0.25-0.4
+      u_square_weight: 0.05 + Math.random() * 0.1,  // 0.05-0.15
+      u_diagonal_weight: Math.random() * 0.1,  // 0-0.1
+      u_center_radius: 0.1 + Math.random() * 0.1,  // 0.1-0.2
+      u_thickness: 0.025 + Math.random() * 0.025,  // 0.025-0.05
+      u_wave_amplitude: Math.random() * 0.02,  // 0-0.02 subtle
+      u_iterations: 3 + Math.floor(Math.random() * 2),  // 3-4
+      u_scale_factor: 1.3 + Math.random() * 0.3,  // 1.3-1.6
+      u_rotation_per_layer: 0.1 + Math.random() * 0.15,  // 0.1-0.25
+      u_glow_intensity: 1.0 + Math.random() * 0.3,  // 1.0-1.3
+      u_pulse_freq: 7.5 + Math.random() * 1.5,  // 7.5-9
+      u_time_factor: 0.9 + Math.random() * 0.3,  // 0.9-1.2
+      u_use_tiling: 0  // No tiling
+    };
+    
+    console.log('Variation 2 configuration:', {
+      radialWeight: params.u_radial_weight.toFixed(2),
+      ringFreq: params.u_ring_freq.toFixed(1),
+      crossWeight: params.u_cross_weight.toFixed(2),
+      squareWeight: params.u_square_weight.toFixed(2),
+      iterations: params.u_iterations,
+      timeSpeed: params.u_time_factor.toFixed(2)
+    });
+    
+    sandbox.load(document.getElementById('frag').textContent);
+    
+    setTimeout(() => {
+      for (const [key, value] of Object.entries(params)) {
+        sandbox.setUniform(key, value);
+      }
+    }, 100);
+  });
+</script>
+
+</body>
+</html>

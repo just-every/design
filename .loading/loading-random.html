@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Neon Random Pattern</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+</style>
+<script src="https://rawcdn.githack.com/patriciogonzalezvivo/glslCanvas/master/dist/GlslCanvas.js"></script>
+</head>
+<body>
+
+<canvas id="shader" width="800" height="600"></canvas>
+
+<script id="frag" type="x-shader/x-fragment">
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+uniform vec2  u_resolution;
+uniform float u_time;
+
+// Random parameters generated on page load
+uniform float u_pattern_type;
+uniform float u_iterations;
+uniform float u_scale_factor;
+uniform float u_sin_freq;
+uniform float u_glow_power;
+uniform float u_ring_count;
+uniform float u_ray_count;
+uniform float u_cross_width;
+uniform float u_use_fract;
+uniform float u_rotation_speed;
+
+vec3 palette(float t){
+  vec3 a=vec3(0.5);
+  vec3 b=vec3(0.5);
+  vec3 c=vec3(1.0);
+  vec3 d=vec3(0.263,0.416,0.557);
+  return a + b*cos(6.28318*(c*t+d));
+}
+
+float pattern1(vec2 uv) {
+  // Concentric rings (like loading9)
+  float r = length(uv);
+  float rings = abs(sin(r * u_ring_count - u_time * 2.0));
+  float d = rings - 0.5;
+  
+  // Add cross pattern
+  float cross = min(abs(uv.x), abs(uv.y));
+  d = min(abs(d), cross - u_cross_width);
+  
+  return d;
+}
+
+float pattern2(vec2 uv) {
+  // Star burst (like loading16)
+  float r = length(uv);
+  float a = atan(uv.y, uv.x);
+  
+  float d = abs(sin(a * u_ray_count)) * r;
+  float circle = abs(r - 0.2);
+  d = min(d, circle);
+  
+  return d;
+}
+
+float pattern3(vec2 uv) {
+  // Square rings (like loading15)
+  vec2 d2 = abs(uv) - 0.3;
+  float d = length(max(d2, 0.0));
+  d = abs(d - 0.1);
+  
+  return d;
+}
+
+float pattern4(vec2 uv) {
+  // Cross with diagonals (like loading14)
+  float cross = min(abs(uv.x), abs(uv.y));
+  float diag = min(abs(uv.x - uv.y), abs(uv.x + uv.y));
+  float d = min(cross - u_cross_width, diag - u_cross_width);
+  
+  // Add rings
+  float r = length(uv);
+  float rings = abs(sin(r * u_ring_count - u_time * 2.0)) - 0.5;
+  d = min(d, abs(rings));
+  
+  return d;
+}
+
+float pattern5(vec2 uv) {
+  // Simple circles (like original)
+  float d = length(uv);
+  return d;
+}
+
+void main(){
+  vec2 uv  = (gl_FragCoord.xy*2.0 - u_resolution.xy) / u_resolution.y;
+  vec2 uv0 = uv;
+  vec3 finalColor = vec3(0.0);
+
+  for (float i = 0.0; i < 6.0; i++) {
+    if (i >= u_iterations) break;
+    
+    vec3 col = palette(length(uv0) + i*0.4 + u_time*0.4);
+
+    // Apply fract or smooth transform based on random parameter
+    if (u_use_fract > 0.5) {
+      uv = fract(uv * u_scale_factor) - 0.5;
+    } else {
+      // Smooth animated transform (like loading9)
+      vec2 offset = vec2(0.1 * sin(u_time * u_rotation_speed + i), 
+                        0.1 * cos(u_time * u_rotation_speed + i));
+      uv = uv * u_scale_factor + offset;
+    }
+    
+    // Select pattern based on random type
+    float d;
+    if (u_pattern_type < 0.2) {
+      d = pattern1(uv);
+    } else if (u_pattern_type < 0.4) {
+      d = pattern2(uv);
+    } else if (u_pattern_type < 0.6) {
+      d = pattern3(uv);
+    } else if (u_pattern_type < 0.8) {
+      d = pattern4(uv);
+    } else {
+      d = pattern5(uv);
+    }
+    
+    // Apply standard radial expansion and glow
+    d *= exp(-length(uv0));
+    d = sin(d * u_sin_freq + u_time) / u_sin_freq;
+    d = abs(d);
+    d = pow(0.01 / d, u_glow_power);
+
+    finalColor += col * d;
+  }
+
+  gl_FragColor = vec4(finalColor, 1.0);
+}
+</script>
+
+<script>
+  window.addEventListener('load', function() {
+    const canvas  = document.getElementById('shader');
+    const sandbox = new GlslCanvas(canvas);
+    
+    // Generate random parameters
+    const params = {
+      u_pattern_type: Math.random(),
+      u_iterations: Math.floor(Math.random() * 3) + 3, // 3-5
+      u_scale_factor: 1.2 + Math.random() * 0.6, // 1.2-1.8
+      u_sin_freq: 6.0 + Math.random() * 4.0, // 6-10
+      u_glow_power: 1.0 + Math.random() * 0.4, // 1.0-1.4
+      u_ring_count: 6.0 + Math.random() * 6.0, // 6-12
+      u_ray_count: Math.floor(Math.random() * 8) + 4, // 4-12
+      u_cross_width: 0.01 + Math.random() * 0.02, // 0.01-0.03
+      u_use_fract: Math.random(), // 0 or 1 decision
+      u_rotation_speed: 0.3 + Math.random() * 0.4 // 0.3-0.7
+    };
+    
+    // For patterns that work well with fract (3 and 5), prefer fract
+    if (params.u_pattern_type > 0.4 && params.u_pattern_type < 0.6) {
+      params.u_use_fract = 0.8; // 80% chance of fract for pattern 3
+    } else if (params.u_pattern_type > 0.8) {
+      params.u_use_fract = 0.8; // 80% chance of fract for pattern 5
+    } else {
+      params.u_use_fract = 0.2; // 20% chance for others
+    }
+    
+    // Log the current configuration
+    console.log('Random shader configuration:', {
+      pattern: params.u_pattern_type < 0.2 ? 'rings+cross' :
+               params.u_pattern_type < 0.4 ? 'starburst' :
+               params.u_pattern_type < 0.6 ? 'square rings' :
+               params.u_pattern_type < 0.8 ? 'cross+diagonals' : 'simple circles',
+      iterations: params.u_iterations,
+      scaleFactor: params.u_scale_factor.toFixed(2),
+      useFract: params.u_use_fract > 0.5
+    });
+    
+    // Set uniforms and load shader
+    sandbox.load(document.getElementById('frag').textContent);
+    
+    // Apply uniforms after shader is loaded
+    setTimeout(() => {
+      for (const [key, value] of Object.entries(params)) {
+        sandbox.setUniform(key, value);
+      }
+    }, 100);
+  });
+</script>
+
+</body>
+</html>
