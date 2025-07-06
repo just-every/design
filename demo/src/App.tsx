@@ -105,12 +105,10 @@ function App() {
           alignItems: 'center',
           gap: '12px',
           padding: '16px 20px',
-          background: 'linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 158, 255, 0.05))',
-          border: '1px solid rgba(74, 158, 255, 0.2)',
           borderRadius: '12px',
           backdropFilter: 'blur(10px)'
         }}>
-          🎨 Design Demo
+          Design Demo
         </div>
 
         <Card>

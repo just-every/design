@@ -206,12 +206,16 @@ npm run lint
 Run the interactive web UI demo to visualize the design generation process:
 
 ```bash
-cd demo
-npm install  # First time only
 npm run demo
 ```
 
 Then open http://localhost:3456 in your browser.
+
+Alternative demo commands:
+```bash
+npm run demo:install  # Install demo dependencies only
+npm run demo:build    # Build demo without running server
+```
 
 The demo provides:
 - Real-time visualization of design generation

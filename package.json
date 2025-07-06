@@ -11,16 +11,19 @@
     "test:ui": "vitest --ui",
     "lint": "eslint src/**/*.ts",
     "clean": "rm -rf dist",
-    "design": "./design.sh"
+    "design": "./design.sh",
+    "demo": "cd demo && npm install && npm run demo",
+    "demo:install": "cd demo && npm install",
+    "demo:build": "cd demo && npm run build"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.53.0",
+    "@anthropic-ai/sdk": "^0.56.0",
     "@just-every/ensemble": "^0.2.35",
     "@just-every/search": "^1.0.1",
     "@just-every/task": "^0.2.5",
     "@napi-rs/canvas": "^0.1.71",
     "commander": "^14.0.0",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.1",
     "jsdom": "^26.1.0",
     "node-fetch": "^3.3.2",
     "openai": "^5.2.0",
@@ -31,7 +34,7 @@
   },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^22.15.30",
+    "@types/node": "^24.0.10",
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
