@@ -201,6 +201,25 @@ npm test
 npm run lint
 ```
 
+## Demo
+
+Run the interactive web UI demo to visualize the design generation process:
+
+```bash
+cd demo
+npm install  # First time only
+npm run demo
+```
+
+Then open http://localhost:3456 in your browser.
+
+The demo provides:
+- Real-time visualization of design generation
+- Image galleries showing reference images, drafts, and final designs
+- Conversation history showing AI decision-making
+- LLM request logging with token usage
+- Research reports and selection criteria
+
 ## License
 
 MIT
