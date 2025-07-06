@@ -9,6 +9,7 @@ import ImageGallery from './components/ImageGallery'
 import LLMRequestLog from './components/LLMRequestLog'
 import ReportView from './components/ReportView'
 import ConversationView from './components/ConversationView'
+import ApiKeysForm, { ApiKeys } from './components/ApiKeysForm'
 import { useDesignRunner } from './hooks/useDesignRunner'
 import { DesignState, LLMRequest } from './types'
 import './App.scss'
@@ -26,6 +27,14 @@ function App() {
   const [totalTokens, setTotalTokens] = useState(0)
   const [totalCost, setTotalCost] = useState(0)
   const [withInspiration, setWithInspiration] = useState(true)
+  const [apiKeys, setApiKeys] = useState<ApiKeys>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      return JSON.parse(localStorage.getItem('demo_api_keys') || '{}')
+    } catch {
+      return {}
+    }
+  })
 
   const { runDesign, stopDesign, connect } = useDesignRunner({
     onStateUpdate: setDesignState,
@@ -49,7 +58,8 @@ function App() {
         setTotalTokens(prev => prev + request.response!.usage.totalTokens)
         setTotalCost(prev => prev + (request.response!.usage.totalTokens * 0.00001)) // Mock cost calculation
       }
-    }
+    },
+    apiKeys
   })
 
   // Connect to WebSocket on mount
@@ -114,7 +124,11 @@ function App() {
         </div>
 
         <Card>
-          <DesignExamples 
+          <ApiKeysForm apiKeys={apiKeys} onChange={setApiKeys} />
+        </Card>
+
+        <Card>
+          <DesignExamples
             selectedExample={selectedExample}
             onSelectExample={setSelectedExample}
             selectedAssetType={selectedAssetType}
